@@ -1,15 +1,20 @@
 import inquirer from "inquirer";
+import handlers from "./handler.js";
 
 export default class UCLI {
+  #hanlderUtils;
+
+  constructor() {
+    this.#hanlderUtils = new handlers();
+  }
   mainInterface() {
-    // console.clear();
     inquirer
       .prompt([
         {
           type: "list",
           name: "option",
           message: "Select an option:",
-          choices: ["Input", "Login", "Quit"],
+          choices: ["Input", "Data Report", "Quit"],
         },
       ])
       .then(({ option }) => {
@@ -17,7 +22,7 @@ export default class UCLI {
           case "Input":
             this.newInput();
             break;
-          case "Login":
+          case "Data Report":
             this.login();
             break;
           case "Quit":
@@ -29,7 +34,6 @@ export default class UCLI {
       .catch((err) => console.error(err));
   }
   async newInput() {
-    // console.log("newInput Triggered!");
     await inquirer
       .prompt([
         {
@@ -37,7 +41,7 @@ export default class UCLI {
           name: "name",
           message: "Enter your name: (Alphabetical characters only!)",
           validate: (val) => {
-            if (!val.trim().match(/^[a-zA-Z ]+$/g))
+            if (!val.match(/^[a-zA-Z ]+$/g))
               return "Please enter alphabetical characters only!";
             return true;
           },
@@ -58,10 +62,12 @@ export default class UCLI {
           },
         },
       ])
-      .then(({ name, gender, age }) => {
-        console.log(`${name} ${gender} ${age}`);
-        /* TODO -> validation and insetrtion in DB */
-        console.log("Success!");
+      .then((data) => {
+        if (this.#hanlderUtils.dataInsertionHandler(data)) {
+          console.log("\n\tSuccess!\n");
+        } else {
+          console.log("\n\tSomething went wrong!\n");
+        }
       })
       .catch((err) => console.error(err));
 
@@ -69,7 +75,6 @@ export default class UCLI {
     return;
   }
   async login() {
-    // console.log("login Triggered!");
     await inquirer
       .prompt([
         {
@@ -84,9 +89,15 @@ export default class UCLI {
           mask: true,
         },
       ])
-      .then(({ username, password }) => {
-        console.log(`${username} ${password}`);
-        /* TODO -> validation and Login procces */
+      .then(async (data) => {
+        if (this.#hanlderUtils.loginHandler(data)) {
+          console.log("\n\tLogin was successful!\n");
+          await this.#hanlderUtils
+            .dataFetchHanlder()
+            .then((data) => console.table(data));
+        } else {
+          console.error("\n\tLogin Failed, Access Denied!\n");
+        }
       })
       .catch((err) => console.error(err));
     this.mainInterface();
